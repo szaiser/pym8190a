@@ -70,7 +70,8 @@ Only necessary, when duty cycle limiting is used. The `__AMPLIFIER_POWER__` give
 
 First of all, a dictionary-like object is created, into which all sequences are written.
 
-```import pym8190a
+```
+import pym8190a
 md = pym8190a.MultiChSeqDict()
 ```
 
