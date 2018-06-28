@@ -33,10 +33,11 @@ When multiple AWGs work together, two options for synchronization are available
 * If available, use the Keysight M8192A Synchronization Module 
 
 ## Installing
-
+```
 git clone https://github.com/szaiser/pym8190a.git
 cd pym8190a
 python setup.py install
+```
 
 ## Configuration
 
