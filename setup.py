@@ -6,7 +6,7 @@ setup(name='pym8190a',
       url='http://github.com/szaiser/pym8190a',
       author='Sebastian Zaiser',
       author_email='s.zaiser@gmail.com',
-      license='MIT',
+      license='GNU General Public License v3.0',
       packages=['pym8190a'],
       install_requires=[
           'pyvisa',
