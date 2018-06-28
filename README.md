@@ -69,24 +69,21 @@ Only necessary, when duty cycle limiting is used. The `__AMPLIFIER_POWER__` give
 
 ## Usage
 
-First of all, a dictionary-like object is created, into which all sequences are written.
+The sequence needs to be created and its individual steps need to be defined. Finally, the sequence must be written to the AWG memory.
 
-```
-import pym8190a
-md = pym8190a.MultiChSeqDict()
-```
+`import pym8190a`
 
 ### Sequence creation
 
 The sequence must be created. It needs to be given a name, and if not all channels from `__CH_DICT_FULL` are supposed to be used (and written to, which costs time), ch_dict gives the channels required for the sequence.
 
-`s = MCAS.MultiChSeq(name='sequence_name, ch_dict={'2g': [2]})`
+`s = pym8190a.MultiChSeq(name='sequence0', ch_dict={'2g': [2]})`
 
 ### Adding a segment to the sequence
 
 A new segment needs to be appended to the sequence, which later will be written to the AWG memory and when sequencing is used, also represent one step in the sequencer memory. The loop_count specifies, how often the segment is repeated in the sequence, before the next segment is played.
 
-`s.start_new_segment('segment_name', loop_count=100)`
+`s.start_new_segment('segment0', loop_count=100)`
 
 ### Adding a segment step to the last added segment.
 
@@ -94,6 +91,24 @@ A new segment needs to be appended to the sequence, which later will be written 
 * The samplemarker of the segment will be on for the duration of 'segment_step0' (123 samples), but not during the automatically added samples at the end of the segment (the other 197 samples).
 
 `s.add_step_complete(name='segment_step0', length_mus=123/12e3, smpl_marker=True)`
+
+### Writing to and deleting from AWG memory
+
+A special dictionary-like object, the sequence dictionary, keeps track of all AWG sequences which are written onto the AWG Memory. Adding a sequence to the sequence dictionary will write it to the AWG memory, deleting it from the dictionary will also delete it from the AWG memory and additionally cause a a defragmentation of the AWG memory. Defragmentation in this context means, that all sequences written to the AWG memory are written in consecutive parts of the memory, gaps are filled.
+
+```
+md = pym8190a.MultiChSeqDict()
+md['sequence0'] = s
+```
+
+To delete the sequence from the AWG memory it has to be removed from the dictionary.
+
+```
+del md['sequence0']
+``` 
+
+
+### Adding the sequence to the 
 
 ## Authors
 
