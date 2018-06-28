@@ -84,14 +84,14 @@ First of all, the sequence must be created. It needs to be given a name, and if 
 
 A new segment needs to be appended to the sequence, which later will be written to the AWG memory and when sequencing is used, also represent one step in the sequencer memory. The loop_count specifies, how often the segment is repeated in the sequence, before the next segment is played.
 
-'s.start_new_segment('segment_name', loop_count=100)' 
+`s.start_new_segment('segment_name', loop_count=100)`
 
 ### Adding a segment step to the last added segment.
 
 * The name of the newly added segment step is 'segment_step0' and its duration is 123 samples, i.e. 0.01025µs. As this does not fulfill the requirement for a sample to have a duration of 320 + 64*n samples, pym8190a automatically adds 197 samples to the segment.
 * The samplemarker of the segment will be on for the duration of 'segment_step0' (123 samples), but not during the automatically added samples at the end of the segment (the other 197 samples).
 
-' add_step_complete(name='segment_step0', length_mus=123/12e3, smpl_marker=True)' 
+`s.add_step_complete(name='segment_step0', length_mus=123/12e3, smpl_marker=True)`
 
 ## Authors
 
