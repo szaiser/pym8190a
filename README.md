@@ -77,7 +77,7 @@ md = pym8190a.MultiChSeqDict()
 
 ### Sequence creation
 
-First of all, the sequence must be created. It needs to be given a name, and if not all channels from `__CH_DICT_FULL` are supposed to be used (and written to, which costs time), ch_dict gives the channels required for the sequence.
+The sequence must be created. It needs to be given a name, and if not all channels from `__CH_DICT_FULL` are supposed to be used (and written to, which costs time), ch_dict gives the channels required for the sequence.
 
 `s = MCAS.MultiChSeq(name='sequence_name, ch_dict={'2g': [2]})`
 
