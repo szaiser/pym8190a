@@ -85,7 +85,9 @@ The sequence must be created. It needs to be given a name, and if not all channe
 
 A new segment needs to be appended to the sequence, which later will be written to the AWG memory and when sequencing is used, also represents one step in the sequencer memory. The loop_count specifies, how often the segment is repeated in the sequence, before the next segment is played.
 
-`>>>  s.start_new_segment('basic_segment', loop_count=5)`
+```
+>>>  s.start_new_segment('basic_segment', loop_count=5)
+```
 
 ### Adding a segment step to the basic segment.
 
@@ -105,7 +107,7 @@ This more advanced segment sets the sample marker of channel 1 of AWG '2g' and o
 ```
 pd2g1 = dict(smpl_marker=True)
 pd2g2 = dict(type='sine', frequencies=[1.0, 2.0], amplitudes=[0.1, 0.2], phases=[30, 90])
-s.add_step_complete(name='segment_step0', length_mus=123/12e3, pd2g1=pd2g1, pd2g2=pd2g2)
+s.add_step_complete(name='segment_step0', length_mus=9.6, pd2g1=pd2g1, pd2g2=pd2g2)
 ```
 
 ### Writing to and deleting from AWG memory
@@ -136,26 +138,25 @@ Information about the sequence can be printed for each channel individually, whe
 Channel 1:
 ```
 >>> s.dl('2g', 1).print_info()
-0     sequence0         0.266667  1       
+0     sequence0         48.133333 1       
    0     basic_segment     0.133333  5       
       0     segment_step0     0.010250  wait    1       0       
       1     _missing_smpls_   0.016417  wait    0       0       
-   1     advanced_segment  0.133333  5       
-      0     segment_step0     0.010250  wait    1       0       
-      1     _missing_smpls_   0.016417  wait    0       0       
+   1     advanced_segment  48.000000 5       
+      0     segment_step0     9.600000  wait    1       0       
+      1     _missing_smpls_   0.000000  wait    0       0       
 ```
 Channel 2:
 ```
 >>> s.dl('2g', 2).print_info()
-0     sequence0         0.266667  1       
+0     sequence0         48.133333 1       
    0     basic_segment     0.133333  5       
       0     segment_step0     0.010250  wait    1       0       
       1     _missing_smpls_   0.016417  wait    0       0       
-   1     advanced_segment  0.133333  5       
-      0     segment_step0     0.010250  sine    [ 1.  2.][ 0.1  0.2][ 30.  90.]0       0       
-      1     _missing_smpls_   0.016417  wait    0       0       
+   1     advanced_segment  48.000000 5       
+      0     segment_step0     9.600000  sine    [ 1.  2.][ 0.1  0.2][ 30.  90.]0       0       
+      1     _missing_smpls_   0.000000  wait    0       0         
 ```
-
 
 ## Authors
 
