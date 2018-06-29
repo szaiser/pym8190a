@@ -6,11 +6,13 @@ pym8190a is a python package providing fast and convenient sequence creation on 
 
 * Convenient sequence creation with multiple AWG M8190A and multiple channels
 * Synchronization of separate channels 
-* Timebase can either be given in samples (1 sample = 1/12e3 µs) or in µs.
-* Automatically fills up segments which do not fulfill the requirement for a length of  320 + 64*n samples with zeros.
 * Optimized for high writing speed
 * Multiple sequences can be written into the AWG memory and remain there for immediate access until the user instructs their deletion to free the memory.
+* View details of your created sequence via built-in print-to-console funcionality.
 * Set limitations on the average power of sine-like signals output by the AWG, i.e. setting an upper bound on the duty cycle for each channel individually.
+* All durations can either be given in samples (`length_smpl` or in µs (`length_mus`).
+* Automatically fills up segments which do not fulfill the requirement for a length of  320 + 64*n samples with zeros.
+
 
 
 ## Missing Features
@@ -77,38 +79,54 @@ The sequence needs to be created and its individual steps need to be defined. Fi
 
 The sequence must be created. It needs to be given a name, and if not all channels from `__CH_DICT_FULL` are supposed to be used (and written to, which costs time), ch_dict gives the channels required for the sequence.
 
-`s = pym8190a.MultiChSeq(name='sequence0', ch_dict={'2g': [2]})`
+```
+>>> s = pym8190a.MultiChSeq(name='sequence0', ch_dict={'2g': [2]})
+```
 
 ### Adding a segment to the sequence
 
 A new segment needs to be appended to the sequence, which later will be written to the AWG memory and when sequencing is used, also represent one step in the sequencer memory. The loop_count specifies, how often the segment is repeated in the sequence, before the next segment is played.
 
-`s.start_new_segment('segment0', loop_count=100)`
+`>>>  s.start_new_segment('segment0', loop_count=100)`
 
 ### Adding a segment step to the last added segment.
 
 * The name of the newly added segment step is 'segment_step0' and its duration is 123 samples, i.e. 0.01025µs. As this does not fulfill the requirement for a sample to have a duration of 320 + 64*n samples, pym8190a automatically adds 197 samples to the segment.
 * The samplemarker of the segment will be on for the duration of 'segment_step0' (123 samples), but not during the automatically added samples at the end of the segment (the other 197 samples).
 
-`s.add_step_complete(name='segment_step0', length_mus=123/12e3, smpl_marker=True)`
+`>>> s.add_step_complete(name='segment_step0', length_mus=123/12e3, smpl_marker=True)`
 
 ### Writing to and deleting from AWG memory
 
 A special dictionary-like object, the sequence dictionary, keeps track of all AWG sequences which are written onto the AWG Memory. Adding a sequence to the sequence dictionary will write it to the AWG memory, deleting it from the dictionary will also delete it from the AWG memory and additionally cause a a defragmentation of the AWG memory. Defragmentation in this context means, that all sequences written to the AWG memory are written in consecutive parts of the memory, gaps are filled.
 
 ```
-md = pym8190a.MultiChSeqDict()
-md['sequence0'] = s
+>>> md = pym8190a.MultiChSeqDict()
+>>> md['sequence0'] = s
 ```
 
 To delete the sequence from the AWG memory it has to be removed from the dictionary.
 
 ```
-del md['sequence0']
+>>> del md['sequence0']
 ``` 
+### Access sequence and view its details
 
+The sequence can be accessed from the sequence dictionary
 
-### Adding the sequence to the 
+```
+>>> s = md['sequence_0']
+```
+
+Information about the sequence can be printed for each channel individually, when the name of the AWG and the channel number are given:
+
+```
+>>> s.dl('2g', 2).pi()
+0     sequence0         2.666667  1       
+   0     segment0          2.666667  100     
+      0     segment_step0     0.010250  wait    1       0       
+      1     _missing_smpls_   0.016417  wait    0       0       
+```
 
 ## Authors
 
