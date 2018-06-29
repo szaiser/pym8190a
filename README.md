@@ -1,6 +1,6 @@
 # pym8190a
 
-pym8190a is a python package providing fast and convenient sequence creation on Keysight M8190A Arbitrary Waveform Generators (AWG). Synchronization of multiple channels is provided by design and is ensured with minimum user interaction and thus maximum error-proneness. 
+pym8190a is a python package providing fast and convenient sequence creation on Keysight M8190A Arbitrary Waveform Generators (AWG). Synchronization of multiple channels is provided by design. 
 
 ## Features
 
