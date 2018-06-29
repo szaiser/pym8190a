@@ -13,8 +13,6 @@ pym8190a is a python package providing fast and convenient sequence creation on 
 * All durations can either be given in samples (`length_smpl` or in µs (`length_mus`).
 * Automatically fills up segments which do not fulfill the requirement for a length of  320 + 64*n samples with zeros.
 
-
-
 ## Missing Features
 
 * Support for Scenarios
@@ -73,28 +71,42 @@ Only necessary, when duty cycle limiting is used. The `__AMPLIFIER_POWER__` give
 
 The sequence needs to be created and its individual steps need to be defined. Finally, the sequence must be written to the AWG memory.
 
-`import pym8190a`
+`>>> import pym8190a`
 
 ### Sequence creation
 
 The sequence must be created. It needs to be given a name, and if not all channels from `__CH_DICT_FULL` are supposed to be used (and written to, which costs time), ch_dict gives the channels required for the sequence.
 
 ```
->>> s = pym8190a.MultiChSeq(name='sequence0', ch_dict={'2g': [2]})
+>>> s = pym8190a.MultiChSeq(name='sequence0', ch_dict={'2g': [1, 2]})
 ```
 
-### Adding a segment to the sequence
+### Adding a basic segment to the sequence
 
-A new segment needs to be appended to the sequence, which later will be written to the AWG memory and when sequencing is used, also represent one step in the sequencer memory. The loop_count specifies, how often the segment is repeated in the sequence, before the next segment is played.
+A new segment needs to be appended to the sequence, which later will be written to the AWG memory and when sequencing is used, also represents one step in the sequencer memory. The loop_count specifies, how often the segment is repeated in the sequence, before the next segment is played.
 
-`>>>  s.start_new_segment('segment0', loop_count=100)`
+`>>>  s.start_new_segment('basic_segment', loop_count=5)`
 
-### Adding a segment step to the last added segment.
+### Adding a segment step to the basic segment.
 
 * The name of the newly added segment step is 'segment_step0' and its duration is 123 samples, i.e. 0.01025µs. As this does not fulfill the requirement for a sample to have a duration of 320 + 64*n samples, pym8190a automatically adds 197 samples to the segment.
-* The samplemarker of the segment will be on for the duration of 'segment_step0' (123 samples), but not during the automatically added samples at the end of the segment (the other 197 samples).
+* The samplemarker of the segment will be on for the duration of 'segment_step0' (123 samples), but not during the automatically added samples at the end of the segment (the other 197 samples). 
 
 `>>> s.add_step_complete(name='segment_step0', length_mus=123/12e3, smpl_marker=True)`
+
+### Adding a more advanced segment to the sequence
+
+`>>>  s.start_new_segment('advanced_segment', loop_count=5)`
+
+### Sine wave creation
+
+This more advanced segment sets the sample marker of channel 1 of AWG '2g' and on channel 2 it outputs the superposition of two sine waves. The frequencies of the sines will be 1 MHz and 2 MHz, their amplitudes will be 0.1 and 0.2 and their phases 30° and 90°.
+
+```
+pd2g1 = dict(smpl_marker=True)
+pd2g2 = dict(type='sine', frequencies=[1.0, 2.0], amplitudes=[0.1, 0.2], phases=[30, 90])
+s.add_step_complete(name='segment_step0', length_mus=123/12e3, pd2g1=pd2g1, pd2g2=pd2g2)
+```
 
 ### Writing to and deleting from AWG memory
 
@@ -120,13 +132,30 @@ The sequence can be accessed from the sequence dictionary
 
 Information about the sequence can be printed for each channel individually, when the name of the AWG and the channel number are given:
 
+
+Channel 1:
 ```
->>> s.dl('2g', 2).pi()
-0     sequence0         2.666667  1       
-   0     segment0          2.666667  100     
+>>> s.dl('2g', 1).print_info()
+0     sequence0         0.266667  1       
+   0     basic_segment     0.133333  5       
+      0     segment_step0     0.010250  wait    1       0       
+      1     _missing_smpls_   0.016417  wait    0       0       
+   1     advanced_segment  0.133333  5       
       0     segment_step0     0.010250  wait    1       0       
       1     _missing_smpls_   0.016417  wait    0       0       
 ```
+Channel 2:
+```
+>>> s.dl('2g', 2).print_info()
+0     sequence0         0.266667  1       
+   0     basic_segment     0.133333  5       
+      0     segment_step0     0.010250  wait    1       0       
+      1     _missing_smpls_   0.016417  wait    0       0       
+   1     advanced_segment  0.133333  5       
+      0     segment_step0     0.010250  sine    [ 1.  2.][ 0.1  0.2][ 30.  90.]0       0       
+      1     _missing_smpls_   0.016417  wait    0       0       
+```
+
 
 ## Authors
 
