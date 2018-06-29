@@ -110,7 +110,7 @@ s.add_step_complete(name='segment_step0', length_mus=123/12e3, pd2g1=pd2g1, pd2g
 
 ### Writing to and deleting from AWG memory
 
-A special dictionary-like object, the sequence dictionary, keeps track of all AWG sequences which are written onto the AWG Memory. Adding a sequence to the sequence dictionary will write it to the AWG memory, deleting it from the dictionary will also delete it from the AWG memory and additionally cause a a defragmentation of the AWG memory. Defragmentation in this context means, that all sequences written to the AWG memory are written in consecutive parts of the memory, gaps are filled.
+A special dictionary-like object, the sequence dictionary, keeps track of all AWG sequences which are written onto the AWG memory. Adding a sequence to the sequence dictionary will write it to the AWG memory, deleting it from the dictionary will also delete it from the AWG memory and additionally cause a a defragmentation of the AWG memory. Defragmentation in this context means, that all sequences written to the AWG memory are written in consecutive parts of the memory, gaps are filled.
 
 ```
 >>> md = pym8190a.MultiChSeqDict()
