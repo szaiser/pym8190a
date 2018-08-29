@@ -14,21 +14,11 @@ import threading
 from . import hardware
 from .elements import Sequence, SequenceStep, SequenceStepReuseSegment, WaveStep, __BLM__
 from . import util
-
-__CH_DICT_FULL__ = {'2g': [1, 2], '128m': [1, 2]}
-__AWG_INSTRUMENT_ADDRESS__ = {'2g': 'TCPIP0::localhost::hislip1::INSTR', '128m': 'TCPIP0::localhost::hislip2::INSTR'}
-__MASTER_AWG__ = '2g'
-__MASTER_TRIGGER_CHANNEL__ = 1
-__TRIGGER_DELAY_LENGTH_MUS__ = 27 * __BLM__ # the awg has a fixed trigger delay (sample clock dependent) of ~< 1mus
-__TRIGGER_LENGTH_MUS__ = 27 * __BLM__ # duration of trigger sent to the slave awgs. Must not be longer __TRIGGER_DELAY_LENGTH_MUS__
-__SLAVE_TRIGGER_SAFETY_LENGTH_MUS__ = 5 * __BLM__ # after __MASTER_AWG__ finishes its sequence, it waits this time until it starts over and sends a new trigger
-__MAX_SINE_AVG_POWER__ = {'2g': {1: None, 2: None}, '128m': {1: 1.0, 2: None}}
-__AMPLIFIER_POWER__ = {'2g': {1: 5., 2: 5.}, '128m': {1: 10.0, 2: None}}
-__MARKER_ALIAS__ = {'green': ['2g', 2, 'smpl'], 'gate': ['2g', 2, 'sync'], 'red': ['128m', 1, 'sync'], 'infrared': ['128m', 1, 'smpl']}
+from . import settings
 
 class MultiChSeqDict(collections.OrderedDict):
 
-    def __init__(self, debug_mode=False, restore_awg_settings=True):
+    def __init__(self, debug_mode=False, restore_awg_settings=settings.restore_awg_settings):
         super(MultiChSeqDict, self).__init__()
         self.debug_mode = debug_mode  # completely stops interaction with the awg
         self.connect_to_awgs(restore_awg_settings=restore_awg_settings)
@@ -52,7 +42,7 @@ class MultiChSeqDict(collections.OrderedDict):
         if not self.debug_mode:
             t0 = time.time()
             def get_awg(awgs, name):
-                out = hardware.AWG(__AWG_INSTRUMENT_ADDRESS__[name], name, channel_numbers=__CH_DICT_FULL__[name])
+                out = hardware.AWG(settings.awg_instrument_adress[name], name, channel_numbers=settings.ch_dict_full[name])
                 out.run = False
                 if restore_awg_settings:
                     out.restore_settings_from_file()
@@ -61,22 +51,22 @@ class MultiChSeqDict(collections.OrderedDict):
 
             tl = []
             self.awgs = collections.OrderedDict()
-            for name in __CH_DICT_FULL__.keys():
+            for name in settings.ch_dict_full.keys():
                 tl.append(threading.Thread(target=get_awg, args=(self.awgs, name)))
                 tl[-1].start()
             for t in tl:
                 t.join()
             if notify:
-                logging.getLogger().info("Connected to awgs {} in {}s".format(__CH_DICT_FULL__.keys(), time.time()-t0))
+                logging.getLogger().info("Connected to awgs {} in {}s".format(settings.ch_dict_full.keys(), time.time()-t0))
         elif notify:
-            logging.getLogger().info("Debug mode! Did not connect to awgs {}".format(__CH_DICT_FULL__.keys()))
+            logging.getLogger().info("Debug mode! Did not connect to awgs {}".format(settings.ch_dict_full.keys()))
 
     def stop_awgs(self):
         if not self.debug_mode:
             stop_awgs(self.awgs)
 
     def set_wait(self):
-        mcas = MultiChSeq(name='wait', ch_dict=__CH_DICT_FULL__)
+        mcas = MultiChSeq(name='wait', ch_dict=settings.ch_dict_full)
         mcas.start_new_segment('wait')
         mcas.status = 1
         self['wait'] = mcas
@@ -138,7 +128,7 @@ class MultiChSeqDict(collections.OrderedDict):
 class MultiChSeq:
     def __init__(self, ch_dict=None, **kwargs):
         self.name = kwargs.get('name', kwargs.get('seq_name'))
-        self.ch_dict = valid_ch_dict(__CH_DICT_FULL__ if ch_dict is None else ch_dict)
+        self.ch_dict = valid_ch_dict(settings.ch_dict_full if ch_dict is None else ch_dict)
         self.init_sequences()
         self.status = 0
 
@@ -176,8 +166,8 @@ class MultiChSeq:
             pd[awg_str] = {}
             for ch in chl:
                 pd[awg_str][ch] = kwargs.pop('pd' + awg_str + str(ch), {})
-        for key in [k for k in kwargs if k in __MARKER_ALIAS__]:
-            awg_str, ch, marker_name = __MARKER_ALIAS__[key]
+        for key in [k for k in kwargs if k in settings.marker_alias]:
+            awg_str, ch, marker_name = settings.marker_alias[key]
             pd[awg_str][ch][marker_name + '_marker'] = kwargs.pop(key)
         self.add_step(pd=pd, **kwargs)
 
@@ -244,18 +234,18 @@ class MultiChSeq:
 
     def set_master_trigger_settings(self):
         for awg_str, chl in self.ch_dict.items():
-            if awg_str == __MASTER_AWG__:
+            if awg_str == settings.master_awg:
                 for ch in chl:
-                    trigger_sync_marker = True if ch == __MASTER_TRIGGER_CHANNEL__ else False
+                    trigger_sync_marker = True if ch == settings.master_trigger_channel else False
                     trigger_step = SequenceStep(name='triggerwait')
-                    trigger_step.data_list.append(WaveStep(name='trigger', length_mus=__TRIGGER_LENGTH_MUS__, sync_marker=trigger_sync_marker))
-                    trigger_step.data_list.append(WaveStep(name='waittrigger', length_mus=__TRIGGER_DELAY_LENGTH_MUS__ - __TRIGGER_LENGTH_MUS__))
-                    w_trig_safety_step = SequenceStep(name='w_trig_safety', data_list=[WaveStep(name='w_trig_safety', length_mus=__SLAVE_TRIGGER_SAFETY_LENGTH_MUS__)])
+                    trigger_step.data_list.append(WaveStep(name='trigger', length_mus=settings.trigger_length_mus, sync_marker=trigger_sync_marker))
+                    trigger_step.data_list.append(WaveStep(name='waittrigger', length_mus=settings.trigger_delay_length_mus - settings.trigger_length_mus))
+                    w_trig_safety_step = SequenceStep(name='w_trig_safety', data_list=[WaveStep(name='w_trig_safety', length_mus=settings.slave_trigger_safety_length_mus)])
                     self.sequences[awg_str][ch].data_list = [trigger_step] + self.sequences[awg_str][ch].data_list + [w_trig_safety_step]
 
     def set_slave_trigger_settings(self):
         for awg_str, chl in self.ch_dict.items():
-            if awg_str != __MASTER_AWG__:
+            if awg_str != settings.master_awg:
                 for ch in chl:
                     wait_trigger_step = SequenceStep(data_list=[WaveStep(length_mus=0.0, name='w_trig_step')], advance_mode='SING')
                     self.sequences[awg_str][ch].data_list = self.sequences[awg_str][ch].data_list + [wait_trigger_step]
@@ -265,7 +255,7 @@ class MultiChSeq:
             raise Exception('Error: MCAS {} has already been finalized'.format(self.name))
         t0 = time.time()
         self.fix_avg_rf_power(ignore_max_avg_power=ignore_max_avg_power)
-        if __MASTER_AWG__ is not None and __MASTER_AWG__ in self.ch_dict and len(self.ch_dict) > 1:
+        if settings.master_awg is not None and settings.master_awg in self.ch_dict and len(self.ch_dict) > 1:
             self.set_master_trigger_settings()
             self.set_slave_trigger_settings()
         self.status = 1
@@ -274,7 +264,7 @@ class MultiChSeq:
 
     def fix_avg_rf_power(self, ignore_max_avg_power=False):
         awtd = {}
-        for awg_str, l in __MAX_SINE_AVG_POWER__.items():
+        for awg_str, l in settings.max_sine_avg_power.items():
             awtd[awg_str] = {}
             for ch, max_avg_power in l.items():
                 if max_avg_power is not None and ch in self.ch_dict.get(awg_str, []):
@@ -284,15 +274,15 @@ class MultiChSeq:
                 return
             self.start_new_segment(name='rf_power_safety', loop_count=int(np.ceil(max(flatten_dict_dict(awtd)) / __BLM__)))
             self.asc(length_mus=__BLM__)
-            for awg_str, l in __MAX_SINE_AVG_POWER__.items():
+            for awg_str, l in settings.max_sine_avg_power.items():
                 for ch, max_avg_power in l.items():
                     if max_avg_power is not None and ch in self.ch_dict.get(awg_str, []):
-                        if __AMPLIFIER_POWER__[awg_str][ch] * self.sequences[awg_str][ch].normalized_avg_sine_power / max_avg_power > 1.1 and not ignore_max_avg_power:
+                        if settings.amplifier_power[awg_str][ch] * self.sequences[awg_str][ch].normalized_avg_sine_power / max_avg_power > 1.1 and not ignore_max_avg_power:
                             raise Exception(' Additional wait time added, but power still too high on awg {} ch {}! Sequence {} is {} mus long '
                                             'and has an average rf-power of {} W (maximally allowed: {} W) after adding an additional '
                                             'waiting time of {} mus'.format(awg_str, ch, self.name,
                                                                             self.sequences[awg_str][ch].length_mus,
-                                                                            __AMPLIFIER_POWER__[awg_str][ch] * self.sequences[awg_str][ch].normalized_avg_sine_power,
+                                                                            settings.amplifier_power[awg_str][ch] * self.sequences[awg_str][ch].normalized_avg_sine_power,
                                                                             self.max_avg_power,
                                                                             awtd[awg_str][ch]))
 
@@ -319,7 +309,7 @@ class MultiChSeq:
 
     def write_to_awg_memory(self, ignore_max_avg_power=False, abort=None, notify=True):
         if not ignore_max_avg_power:
-            for awg_str, l in __MAX_SINE_AVG_POWER__.items():
+            for awg_str, l in settings.max_sine_avg_power.items():
                 for ch, max_avg_power in l.items():
                     if max_avg_power is not None and ch in self.ch_dict.get(awg_str, []):
                         if check_avg_rf_power(self.dl(awg_str, ch), awg_str, ch, max_avg_power, notify=True) != 0:
@@ -347,7 +337,7 @@ class MultiChSeq:
         self.written = False
 
     def initialize(self):
-        for awg_str, chl in __CH_DICT_FULL__.items():
+        for awg_str, chl in settings.ch_dict_full.items():
             for ch in chl:
                 if ch in self.ch_dict.get(awg_str, []):
                     sequence = self.sequences[awg_str][ch]
@@ -364,32 +354,32 @@ class MultiChSeq:
 
 def valid_ch_dict(ch_dict):
     if len(ch_dict) > 1:
-        if __MASTER_AWG__ is None or __MASTER_TRIGGER_CHANNEL__ is None:
-            raise Exception('No __MASTER_AWG__ and __MASTER_TRIGGER_CHANNEL__ must be given when multiple awgs are used. If you own the synchronization module, changes to the code need to be made.')
-        if not __MASTER_AWG__ in ch_dict or not __MASTER_TRIGGER_CHANNEL__ in ch_dict[__MASTER_AWG__]:
-            raise Exception('No __MASTER_AWG__ and __MASTER_TRIGGER_CHANNEL__ must be in ch_dict when multiple awgs are used.')
+        if settings.master_awg is None or settings.master_trigger_channel is None:
+            raise Exception('No settings.master_awg and settings.master_trigger_channel must be given when multiple awgs are used. If you own the synchronization module, changes to the code need to be made.')
+        if not settings.master_awg in ch_dict or not settings.master_trigger_channel in ch_dict[settings.master_awg]:
+            raise Exception('No settings.master_awg and settings.master_trigger_channel must be in ch_dict when multiple awgs are used.')
     return ch_dict
 
 def check_avg_rf_power(sequence, awg_str, ch, max_avg_power=None, notify=True):
-    avg_power = __AMPLIFIER_POWER__[awg_str][ch] * sequence.normalized_avg_sine_power
+    avg_power = settings.amplifier_power[awg_str][ch] * sequence.normalized_avg_sine_power
     additional_wait_time = max(0, sequence.length_mus * (avg_power / max_avg_power - 1))
     if notify:
         logging.getLogger().info("avg_power {:.2f} W,max_avg_power: {} W, additional_wait_time: {} mus".format(avg_power, max_avg_power, additional_wait_time))
     return additional_wait_time
 
 def send_trigger(awgs, ch_dict=None):
-    ch_dict = __CH_DICT_FULL__ if ch_dict is None else ch_dict
-    awg_str = ch_dict.keys()[0] if len(ch_dict) == 1 else __MASTER_AWG__
+    ch_dict = settings.ch_dict_full if ch_dict is None else ch_dict
+    awg_str = ch_dict.keys()[0] if len(ch_dict) == 1 else settings.master_awg
     awgs[awg_str].send_begin()
 
 def set_outputs(awgs, ch_dict=None):
-    ch_dict = __CH_DICT_FULL__ if ch_dict is None else ch_dict
-    for awg_str, chl in __CH_DICT_FULL__.items():
+    ch_dict = settings.ch_dict_full if ch_dict is None else ch_dict
+    for awg_str, chl in settings.ch_dict_full.items():
         for ch in chl:
             awgs[awg_str].ch[ch].output = 1 if ch in ch_dict.get(awg_str, []) else 0
 
 def start_awgs(awgs, ch_dict=None, trigger=True):
-    ch_dict = __CH_DICT_FULL__ if ch_dict is None else ch_dict
+    ch_dict = settings.ch_dict_full if ch_dict is None else ch_dict
     for awg_str, channels in ch_dict.items():
             awgs[awg_str].run = True
     set_outputs(awgs, ch_dict=ch_dict)
@@ -397,7 +387,7 @@ def start_awgs(awgs, ch_dict=None, trigger=True):
         send_trigger(ch_dict=ch_dict, awgs=awgs)
 
 def stop_awgs(awgs, ch_dict=None):
-    ch_dict = __CH_DICT_FULL__ if ch_dict is None else ch_dict
+    ch_dict = settings.ch_dict_full if ch_dict is None else ch_dict
     for awg_str, channels in ch_dict.items():
         awgs[awg_str].run = False
 

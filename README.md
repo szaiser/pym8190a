@@ -15,6 +15,7 @@ pym8190a is a python package providing fast and convenient sequence creation on 
 
 ## Missing Features
 
+* Full Software Documentation
 * Support for Scenarios
 
 ## Prerequisites
@@ -41,68 +42,90 @@ python setup.py install
 
 ## Configuration
 
-pym8190a.py is the main-file and -for now- also is the place for user specific settings. For historical reasons, the default values are '2g' for one AWG and '128m' for another one with two channels each.
+All user specific settings can be found in settings.py. The present settings are a tested working example.
 
 ### Essential settings
 
-##### `__AWG_INSTRUMENT_ADDRESS__`
+##### `settings_folder` and `restore_awg_settings`
+The settings folder is used for storage and loading of awg settings (command :SYST:SET[?], see user manual). For each AWG device a separate configuration file is loaded and must be present in `settings_folder`  
+The boolean variable `restore_awg_settings` determines, if settings from `settings_folder` are loaded. Set to False, if no settings files were generated.
 
-This adress is given in the instrument driver instance of the AWG.
+##### `ch_dict_full`
 
-##### `__CH_DICT_FULL__`
+Channels are specified for each AWG according to naming convention in AWG manual, i.e. the channel count starts at 1 (unlike pythons convention where counting starts at 0). 
 
-Channels are specified for each AWG according to naming convention in AWG manual, i.e. the channel count starts at 1 (unlike pythons convention where counting starts at 0)
+##### `awg_instrument_adress`
 
-##### `__MASTER_AWG__` and `__MASTER_TRIGGER_CHANNEL__`
+This adress is given in the instrument driver instance of each of your AWGs.
 
-When multiple AWGs need to work together, the syncmarker of channel `__MASTER_TRIGGER_CHANNEL__` of the master AWG `__MASTER_AWG__` awg gives the trigger for the slave AWGs.  
+### Settings for multiple, connected AWGs
+
+##### `master_awg` and `master_trigger_channel`
+
+There always exists one master AWG which triggers n=0..N slave AWGs. If n=0, you do not need these settings. The syncmarker of channel `master_trigger_channel` of the master AWG `master_awg` awg gives the trigger for the slave AWGs.  
 
 ### Optional settings
 
-##### `__MARKER_ALIAS__`
+##### `marker_alias`
 
 For convenience, the markers can be given special names, e.g. samplemarker of channel 2 of AWG '2g' is given the alias 'green' via `{'green': ['2g', 2, 'smpl']`
 
-##### `__MAX_SINE_AVG_POWER__` and `__AMPLIFIER_POWER__`
+##### `max_sine_avg_power` and `amplifier_power`
 
-Only necessary, when duty cycle limiting is used. The `__AMPLIFIER_POWER__` gives the maximum power of the amplifier connected to the channel, while the `__MAX_SINE_AVG_POWER__` gives the maximum average power. For higher average powers, waiting times are appended to the sequence.
+Only necessary, when the duty cycle limiting feature is used. The `amplifier_power` gives the maximum power of the amplifier connected to the channel, while the `max_sine_avg_power` gives the maximum allowed average power. When the average sine wave power is higher than this value, waiting times are appended to the sequence to limit the average power.
 
-## Usage
+## Basic usage
 
-The sequence needs to be created and its individual steps need to be defined. Finally, the sequence must be written to the AWG memory.
+The package is imported via 
 
 `>>> import pym8190a`
 
-### Sequence creation
+As a basic example, we write a basic, two segment long sequence. The necessary steps are:
 
-The sequence must be created. It needs to be given a name, and if not all channels from `__CH_DICT_FULL` are supposed to be used (and written to, which costs time), ch_dict gives the channels required for the sequence.
+* create an empty sequence with name `sequence0`
+* append the first segment and fill it with data. This first segment consists of one user generated step and is supposed to turn sample marker on.
+* append the second segment and fill it with data. The second segment will consist of one user generated step and addresses two separate channels. This second segments plays actual arbiatrary waveform data.
+* create an instance `md` of MultiChSeqDict
+* store our sequence in `md`
+* start `sequence0'
+
+The complete code is found at the end of the Basic usage chapter.
+
+### Create empty sequence  sequence0
+
+
+Every sequence is an instance of `pym8190a.MultiChSeq` and has `name`as required argument. In our example, we assume, that `ch_dict_full = {'2g': [1, 2], '128m': [1, 2]}` but that AWG '128m' is not for the sequence. The channels required for the sequence can be specified by `ch_dict_full`. All channels given in `ch_dict` must also be present in `settings.ch_dict_full`. Using only a subset of the available channels reduces the time needed for sequence compiliation and writing into the AWG memory.
 
 ```
 >>> s = pym8190a.MultiChSeq(name='sequence0', ch_dict={'2g': [1, 2]})
 ```
 
-### Adding a basic segment to the sequence
+#### Add an empty segment to the sequence
 
-A new segment needs to be appended to the sequence, which later will be written to the AWG memory and when sequencing is used, also represents one step in the sequencer memory. The loop_count specifies, how often the segment is repeated in the sequence, before the next segment is played.
+To add an empty sequence, use method `start_new_segment`. A segment name (`basic_segment`) must be specified. The new segment, which later will be written to the AWG memory and, when sequencing is used, also represents one step in the sequencer memory. The parameter `loop_count` specifies, how often the segment is repeated in the sequence, before the next segment is played. 
 
 ```
 >>>  s.start_new_segment('basic_segment', loop_count=5)
 ```
 
-### Adding a segment step to the basic segment.
+Note: This segment so far is empty, but segments can only be written with a waveform granularity of 320 + 64*n samples (see AWG manual). To fulfill this requirement, pym8190a writes 320 zero-valued samples to the segment. 
 
-* The name of the newly added segment step is 'segment_step0' and its duration is 123 samples, i.e. 0.01025µs. As this does not fulfill the requirement for a sample to have a duration of 320 + 64*n samples, pym8190a automatically adds 197 samples to the segment.
-* The samplemarker of the segment will be on for the duration of 'segment_step0' (123 samples), but not during the automatically added samples at the end of the segment (the other 197 samples). 
+#### Fill the segment with data
 
-`>>> s.add_step_complete(name='segment_step0', length_mus=123/12e3, smpl_marker=True)`
+* Our segment `basic_segment`so far has no functionality. Hence, we add a wave_step to the segment, which get the name 'segment_step0'. Its duration is 123 samples, at a sampling freuquency of 12Gs/s this corresponds to 0.01025µs. This duration again does not fulfill the requirement for the waveform granularity. To have a duration of 320 + 64*n samples, the software pym8190a adds 197 zero-valued samples to the segment.
+* For the duration of segment 'segment_step0' (123 samples) the sample_marker of AWG '2g', channel 2 shall be set to On. Conveniently, in `pym8190a.settings`, we set the marker_alias `'memory': ['2g', 1, 'smpl']` and hence only have to type `memory=True`.  
 
-### Adding a more advanced segment to the sequence
+`>>> s.add_step_complete(name='segment_step0', length_mus=123/12e3, memory=True)`
 
-`>>>  s.start_new_segment('advanced_segment', loop_count=5)`
+#### Add a second empty segment to the sequence
 
-### Sine wave creation
+`>>>  s.start_new_segment('advanced_segment')`
 
-This more advanced segment sets the sample marker of channel 1 of AWG '2g' and on channel 2 it outputs the superposition of two sine waves. The frequencies of the sines will be 1 MHz and 2 MHz, their amplitudes will be 0.1 and 0.2 and their phases 30° and 90°.
+Note: The segment `advanced_segment` is looped only once, hence the parameter `loop_count` does not need to be set.
+
+#### Sine wave creation
+
+This more advanced segment sets the sample marker of channel 1 of AWG '2g' and on channel 2 it outputs the superposition of two sine waves. The frequencies of the sines will be 1 MHz and 2 MHz, their amplitudes will be 0.1 and 0.2 and their phases 30° and 90°. The step has a duration of 9.6µs, which corresponds to `length_smpl=320+1795*64`. Consequentially, no empty samples have to be appended to the segment. 
 
 ```
 pd2g1 = dict(smpl_marker=True)
@@ -110,7 +133,7 @@ pd2g2 = dict(type='sine', frequencies=[1.0, 2.0], amplitudes=[0.1, 0.2], phases=
 s.add_step_complete(name='segment_step0', length_mus=9.6, pd2g1=pd2g1, pd2g2=pd2g2)
 ```
 
-### Writing to and deleting from AWG memory
+#### Writing to and deleting from AWG memory
 
 A special dictionary-like object, the sequence dictionary, keeps track of all AWG sequences which are written onto the AWG memory. Adding a sequence to the sequence dictionary will write it to the AWG memory, deleting it from the dictionary will also delete it from the AWG memory and additionally cause a a defragmentation of the AWG memory. Defragmentation in this context means, that all sequences written to the AWG memory are written in consecutive parts of the memory, gaps are filled.
 
@@ -124,7 +147,38 @@ To delete the sequence from the AWG memory it has to be removed from the diction
 ```
 >>> del md['sequence0']
 ``` 
-### Access sequence and view its details
+
+### Running and stopping a sequence
+
+A sequence can be started via 
+
+````
+>>> md['sequence0'].run()
+````
+
+The sequence can be stopped via
+
+````
+>>> md.stop_awgs()
+````
+
+### Full example 
+
+````
+import pym8190a
+s = pym8190a.MultiChSeq(name='sequence0', ch_dict={'2g': [1, 2]})
+s.start_new_segment('basic_segment', loop_count=5)
+s.add_step_complete(name='segment_step0', length_mus=123/12e3, memory=True)
+s.start_new_segment('advanced_segment')
+pd2g1 = dict(smpl_marker=True)
+pd2g2 = dict(type='sine', frequencies=[1.0, 2.0], amplitudes=[0.1, 0.2], phases=[30, 90])
+s.add_step_complete(name='segment_step0', length_mus=9.6, pd2g1=pd2g1, pd2g2=pd2g2)
+md = pym8190a.MultiChSeqDict()
+md['sequence0'] = s
+md['sequence0'].run()
+````
+
+### Access a sequence and print its details to the console
 
 The sequence can be accessed from the sequence dictionary
 
@@ -134,29 +188,47 @@ The sequence can be accessed from the sequence dictionary
 
 Information about the sequence can be printed for each channel individually, when the name of the AWG and the channel number are given:
 
-
 Channel 1:
 ```
 >>> s.dl('2g', 1).print_info()
-0     sequence0         48.133333 1       
+0     sequence0         9.733333  1       
    0     basic_segment     0.133333  5       
       0     segment_step0     0.010250  wait    1       0       
       1     _missing_smpls_   0.016417  wait    0       0       
-   1     advanced_segment  48.000000 5       
+   1     advanced_segment  9.600000  1       
       0     segment_step0     9.600000  wait    1       0       
-      1     _missing_smpls_   0.000000  wait    0       0       
+      1     _missing_smpls_   0.000000  wait    0       0        
 ```
 Channel 2:
 ```
 >>> s.dl('2g', 2).print_info()
-0     sequence0         48.133333 1       
+0     sequence0         9.733333  1       
    0     basic_segment     0.133333  5       
-      0     segment_step0     0.010250  wait    1       0       
+      0     segment_step0     0.010250  wait    0       0       
       1     _missing_smpls_   0.016417  wait    0       0       
-   1     advanced_segment  48.000000 5       
+   1     advanced_segment  9.600000  1       
       0     segment_step0     9.600000  sine    [ 1.  2.][ 0.1  0.2][ 30.  90.]0       0       
-      1     _missing_smpls_   0.000000  wait    0       0         
+      1     _missing_smpls_   0.000000  wait    0       0           
 ```
+
+In a similar way, for very long sequences it can be convenient to access information about individual segments or steps, which can be printed to console via
+
+
+Single segment: 
+```
+>>> s.dl('2g', 2, 1).print_info() 
+0     advanced_segment  9.600000  1       
+   0     segment_step0     9.600000  sine    [ 1.  2.][ 0.1  0.2][ 30.  90.]0       0       
+   1     _missing_smpls_   0.000000  wait    0       0     
+```
+
+Single step of a segment:
+
+
+````
+>>> s.dl('2g', 2, 1, 0).print_info()
+ 0     segment_step0     9.600000  sine    [ 1.  2.][ 0.1  0.2][ 30.  90.]0       0  
+````
 
 ## Authors
 
