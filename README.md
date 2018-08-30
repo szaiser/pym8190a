@@ -47,7 +47,7 @@ All user specific settings can be found in settings.py. The present settings are
 ### Essential settings
 
 ##### `settings_folder` and `restore_awg_settings`
-The settings folder is used for storage and loading of awg settings (command `:SYST:SET[?]`, see user manual). For each AWG device a separate configuration file is loaded and must be present in `settings_folder`  
+The settings folder is used for storage and loading of awg settings (command `:SYST:SET[?]`, see user manual). For each AWG device a separate configuration file is loaded and must be present in `settings_folder`. Two exemplary settings files for two AWGs '2g' and '128m' are stored in the default folder /.hardware_settings. For generation of settings files see below.  
 The boolean variable `restore_awg_settings` determines, if settings from `settings_folder` are loaded. Set to False, if no settings files were generated.
 
 ##### `ch_dict_full`
@@ -80,7 +80,7 @@ The package is imported via
 
 `>>> import pym8190a`
 
-As a basic example, we write a basic, two segment long sequence. The necessary steps are:
+As a basic example, write a basic, two segment long sequence. The necessary steps are:
 
 * create an empty sequence with name `sequence0`
 * append the first segment and fill it with data. This first segment consists of one user generated step and is supposed to turn sample marker on.
@@ -94,7 +94,7 @@ The full example is found after a step by step description.
 ### Create empty sequence  sequence0
 
 
-Every sequence is an instance of `pym8190a.MultiChSeq` and has `name`as required argument. In our example, we assume, that `ch_dict_full = {'2g': [1, 2], '128m': [1, 2]}` but that AWG '128m' is not for the sequence. The channels required for the sequence can be specified by `ch_dict_full`. All channels given in `ch_dict` must also be present in `settings.ch_dict_full`. Using only a subset of the available channels reduces the time needed for sequence compiliation and writing into the AWG memory.
+Every sequence is an instance of `pym8190a.MultiChSeq` and has `name`as required argument. In the example, it is assumed, that `ch_dict_full = {'2g': [1, 2], '128m': [1, 2]}` but that AWG '128m' is not for the sequence. The channels required for the sequence can be specified by `ch_dict_full`. All channels given in `ch_dict` must also be present in `settings.ch_dict_full`. Using only a subset of the available channels reduces the time needed for sequence compiliation and writing into the AWG memory.
 
 ```
 >>> s = pym8190a.MultiChSeq(name='sequence0', ch_dict={'2g': [1, 2]})
@@ -112,7 +112,7 @@ Note: This segment so far is empty, but segments can only be written with a wave
 
 #### Fill the segment with data
 
-* Our segment `basic_segment`so far has no functionality. Hence, we add a wave_step to the segment, which get the name 'segment_step0'. Its duration is 123 samples, at a sampling freuquency of 12Gs/s this corresponds to 0.01025µs. This duration again does not fulfill the requirement for the waveform granularity. To have a duration of 320 + 64*n samples, the software pym8190a adds 197 zero-valued samples to the segment.
+* The segment `basic_segment`so far has no functionality. Hence, a wave_step is added to the segment, which is given the name 'segment_step0'. Its duration is 123 samples, at a sampling freuquency of 12Gs/s this corresponds to 0.01025µs. This duration again does not fulfill the requirement for the waveform granularity. To have a duration of 320 + 64*n samples, the software pym8190a adds 197 zero-valued samples to the segment.
 * For the duration of segment 'segment_step0' (123 samples) the sample_marker of AWG '2g', channel 2 shall be set to On. Conveniently, in `pym8190a.settings`, we set the marker_alias `'memory': ['2g', 1, 'smpl']` and hence only have to type `memory=True`.  
 
 `>>> s.add_step_complete(name='segment_step0', length_mus=123/12e3, memory=True)`
@@ -229,6 +229,16 @@ Single step of a segment:
 >>> s.dl('2g', 2, 1, 0).print_info()
  0     segment_step0     9.600000  sine    [ 1.  2.][ 0.1  0.2][ 30.  90.]0       0  
 ````
+
+## Accessing the awg hardware and writing settings files
+
+Given an instance `md` of class pym8190a.MultiChSeqDict, the hardware class of an AWG can be accessed by its name `awg_name` via `md.awgs[awg_name]`. To dump the current AWG settings of an AWG with `awg_name` '2g' to a file, use command
+
+````
+>>> md.awgs['2g'].dump_current_settings_to_file()
+````
+
+The file is stored with current date and time in the settings folder given by pym8190a.settings.settings_folder.
 
 ## Authors
 
