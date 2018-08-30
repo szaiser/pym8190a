@@ -89,7 +89,7 @@ As a basic example, we write a basic, two segment long sequence. The necessary s
 * store our sequence in `md`
 * start `sequence0`
 
-The complete code is found at the end of the Basic usage chapter.
+The full example is found after a step by step description.
 
 ### Create empty sequence  sequence0
 
