@@ -1,9 +1,10 @@
 from __future__ import print_function, absolute_import, division
 __metaclass__ = type
 
+import os
 from .elements import __BLM__
 
-settings_folder = 'D:/Python/pi3diamond/awg_settings'
+settings_folder = os.path.join(os.getcwd(), 'hardware_settings')
 ch_dict_full = {'2g': [1, 2], '128m': [1, 2]}
 awg_instrument_adress = {'2g': 'TCPIP0::localhost::hislip1::INSTR', '128m': 'TCPIP0::localhost::hislip2::INSTR'}
 master_awg = '2g'
