@@ -47,7 +47,7 @@ All user specific settings can be found in settings.py. The present settings are
 ### Essential settings
 
 ##### `settings_folder` and `restore_awg_settings`
-The settings folder is used for storage and loading of awg settings (command :SYST:SET[?], see user manual). For each AWG device a separate configuration file is loaded and must be present in `settings_folder`  
+The settings folder is used for storage and loading of awg settings (command `:SYST:SET[?]`, see user manual). For each AWG device a separate configuration file is loaded and must be present in `settings_folder`  
 The boolean variable `restore_awg_settings` determines, if settings from `settings_folder` are loaded. Set to False, if no settings files were generated.
 
 ##### `ch_dict_full`
@@ -62,7 +62,7 @@ This adress is given in the instrument driver instance of each of your AWGs.
 
 ##### `master_awg` and `master_trigger_channel`
 
-There always exists one master AWG which triggers n=0..N slave AWGs. If n=0, you do not need these settings. The syncmarker of channel `master_trigger_channel` of the master AWG `master_awg` awg gives the trigger for the slave AWGs.  
+There always exists one master AWG which triggers n=0..N slave AWGs. If n=0, you do not need these settings. The syncmarker of channel `master_trigger_channel` of the master AWG `master_awg` gives the trigger for the slave AWGs.  
 
 ### Optional settings
 
