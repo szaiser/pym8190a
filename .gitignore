@@ -2,3 +2,4 @@
 /pym8190a/*.pyc
 /dist/*.egg
 /build/lib/pym8190a
+/pym8190a/hardware_settings

@@ -10,7 +10,7 @@ import sys
 import traceback
 import collections
 import struct
-from . import settings
+from . import settings as pym8190a_settings
 
 class SequencerTable(collections.OrderedDict):
 
@@ -1406,17 +1406,17 @@ class AWG:
 
     @property
     def now_settings_file(self):
-        return '{}/{}_current_{}_settings'.format(settings.settings_folder, datetime.datetime.now().strftime('%Y%m%d-h%Hm%Ms%S'), self.name)
+        return '{}/{}_current_{}_settings'.format(pym8190a_settings.settings_folder, datetime.datetime.now().strftime('%Y%m%d-h%Hm%Ms%S'), self.name)
 
     @property
     def last_settings_file(self):
-        file_list = sorted(os.listdir((settings.settings_folder)))
+        file_list = sorted(os.listdir((pym8190a_settings.settings_folder)))
         file_list = [i for i in file_list if self.name in i]
-        return'{}/{}'.format(settings.settings_folder, file_list[-1])
+        return'{}/{}'.format(pym8190a_settings.settings_folder, file_list[-1])
 
     def dump_settings_to_file(self, settings):
-        if not os.path.isdir(settings.settings_folder):
-            os.mkdir(settings.settings_folder)
+        if not os.path.isdir(pym8190a_settings.settings_folder):
+            os.mkdir(pym8190a_settings.settings_folder)
         with open(self.now_settings_file, "w") as f:
             f.write(settings)
 

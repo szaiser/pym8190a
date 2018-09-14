@@ -449,7 +449,7 @@ class BaseWave(Base):
 
 
 class WaveStep(BaseWave):
-    def __init__(self, type='wait', phase_offset_type='coherent', frequencies=None, amplitudes=None,
+    def __init__(self, type='wait', phase_offset_type='coherent', frequencies=None, amplitudes=None, constant_value=None,
                  phases=None, smpl_marker=False, sync_marker=False, wave_file=None, length_mus=None, length_smpl=None, **kwargs):
         super(WaveStep, self).__init__(**kwargs)
         self.length_mus = length_mus
@@ -459,6 +459,7 @@ class WaveStep(BaseWave):
         self.phase_offset_type = phase_offset_type
         self.frequencies = np.array([0]) if frequencies is None else frequencies
         self.amplitudes = np.array([0]) if amplitudes is None else amplitudes
+        self.constant_value = 0 if constant_value is None else constant_value
         self.phases = np.array([0]) if phases is None else phases
         self.smpl_marker = smpl_marker
         self.sync_marker = sync_marker
@@ -507,7 +508,7 @@ class WaveStep(BaseWave):
 
     @type.setter
     def type(self, val):
-        self._type = util.check_list_element(val, 'type', ['wait', 'sine', 'robust'])
+        self._type = util.check_list_element(val, 'type', ['wait', 'constant', 'sine', 'robust'])
         if self.type == 'robust' and hasattr(self, '_wave_file'):
             self.length_mus = self.wave_file.length_mus
 
@@ -533,6 +534,14 @@ class WaveStep(BaseWave):
     def amplitudes(self, val):
         self._amplitudes = np.array(util.check_array_like_typ(val, 'amplitudes', Number), dtype=float)
         self._amplitudes.setflags(write=False)
+
+    @property
+    def constant_value(self):
+        return self._constant_value
+
+    @constant_value.setter
+    def constant_value(self, val):
+        self._constant_value = util.check_range_type(val, 'constant_value', Number, -(1 + 10 * np.finfo(np.float64).eps), 1 + 10 * np.finfo(np.float64).eps)
 
     @property
     def phases(self):
@@ -561,6 +570,9 @@ class WaveStep(BaseWave):
             arg *= amps[i] * 2047
             samples[start:start + length_smpl] += np.int16(arg)
 
+    def constant(self, samples, start, constant_value, length_smpl):
+        samples[start:start + length_smpl] += np.int16(constant_value * 2047)
+
     def samples_waveform(self, coherent_offset, start=0, samples=None):
         samples = np.zeros(self.length_smpl, dtype=np.int16) if samples is None else samples
         effective_coherent_offset = self.effective_offset(coherent_offset)
@@ -578,6 +590,11 @@ class WaveStep(BaseWave):
                      phases=phases,
                      length_smpl=self.length_smpl,
                      coherent_offset=effective_coherent_offset)
+        elif self.type == 'constant':
+            self.constant(samples=samples,
+                          start=start,
+                          constant_value=self.constant_value,
+                          length_smpl=self.length_smpl)
         samples[start:start + self.length_smpl] *= 2 ** 4
         samples[start:start + self.length_smpl] += self.marker
         return samples
@@ -606,12 +623,16 @@ class WaveStep(BaseWave):
             return sum([self.wave_file.amplitude(i[0], i[1]) ** 2 for i in itertools.product(range(self.wave_file.number_of_steps), range(len(self.frequencies)))]) / self.wave_file.number_of_steps
         elif self.type == 'wait':
             return 0
+        elif self.type == 'constant':
+            return 0
         else:
-            raise Exception('Neither sine or robust do apply here...{}'.format(self.type))
+            raise Exception('Neither sine nor robust do apply here...{}'.format(self.type))
 
     def ret_info(self, row=0, prefix=''):
         if self.type == 'wait':
             l = [self.name, self.length_mus, self.type, int(self.smpl_marker), int(self.sync_marker)]
+        if self.type == 'constant':
+            l = [self.name, self.length_mus, self.type, self.constant_value, int(self.smpl_marker), int(self.sync_marker)]
         elif self.type == 'sine':
             l = [self.name, self.length_mus, self.type, self.frequencies, self.amplitudes, self.phases, int(self.smpl_marker), int(self.sync_marker)]
         elif self.type == 'robust':

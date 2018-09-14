@@ -38,7 +38,7 @@ class MultiChSeqDict(collections.OrderedDict):
             if val is True and not all(written_list):
                 self.rewrite_keys_awg_memory(keys=[k for k in self.keys()[written_list.index(False):]])
 
-    def connect_to_awgs(self, notify=True, restore_awg_settings=True):
+    def connect_to_awgs(self, restore_awg_settings, notify=True):
         if not self.debug_mode:
             t0 = time.time()
             def get_awg(awgs, name):
@@ -402,3 +402,15 @@ def update(d, u):
 
 def flatten_dict_dict(dd):
     return list(itertools.chain(*[i.values() for i in dd.values()]))
+
+# if __name__ == '__main__':
+#     import pym8190a
+#     md = pym8190a.pym8190a.MultiChSeqDict()
+#     md.stop_awgs()
+#     s = pym8190a.pym8190a.MultiChSeq(seq_name='test', ch_dict={'128m': [1]})
+#     s.start_new_segment('s1')
+#     s.asc(length_mus=.2, pd128m1=dict(type='constant', constant_value=.05))
+#     s.asc(length_mus=.2, pd128m1=dict(type='wait'))
+#     s.asc(length_mus=.2, pd128m1=dict(type='constant', constant_value=-.05))
+#     md['test'] = s
+#     md['test'].run()

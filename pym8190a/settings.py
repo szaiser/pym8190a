@@ -4,13 +4,12 @@ __metaclass__ = type
 import os
 from .elements import __BLM__
 
-settings_folder = os.path.join(os.getcwd(), 'hardware_settings')
+settings_folder = os.path.join(os.path.dirname(__file__), 'hardware_settings')
 ch_dict_full = {'2g': [1, 2], '128m': [1, 2]}
 awg_instrument_adress = {'2g': 'TCPIP0::localhost::hislip1::INSTR', '128m': 'TCPIP0::localhost::hislip2::INSTR'}
 master_awg = '2g'
 master_trigger_channel = 1
-restore_awg_settings = False
-
+restore_awg_settings = True
 
 # optional settings
 marker_alias = {'memory': ['2g', 1, 'smpl'], 'green': ['2g', 2, 'smpl'], 'gate': ['2g', 2, 'sync'], 'red': ['128m', 1, 'sync'], 'infrared': ['128m', 1, 'smpl']}
