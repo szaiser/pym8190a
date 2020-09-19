@@ -130,6 +130,7 @@ class MultiChSeq:
         self.name = kwargs.get('name', kwargs.get('seq_name'))
         self.ch_dict = valid_ch_dict(settings.ch_dict_full if ch_dict is None else ch_dict)
         self.init_sequences()
+        self.trigger_sync = True # Trigger sync. between Slave & Master 
         self.status = 0
 
     name = util.ret_property_typecheck('name', str)
@@ -255,7 +256,7 @@ class MultiChSeq:
             raise Exception('Error: MCAS {} has already been finalized'.format(self.name))
         t0 = time.time()
         self.fix_avg_rf_power(ignore_max_avg_power=ignore_max_avg_power)
-        if settings.master_awg is not None and settings.master_awg in self.ch_dict and len(self.ch_dict) > 1:
+        if settings.master_awg is not None and settings.master_awg in self.ch_dict and len(self.ch_dict) > 1 and self.trigger_sync:
             self.set_master_trigger_settings()
             self.set_slave_trigger_settings()
         self.status = 1
