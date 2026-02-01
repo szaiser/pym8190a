@@ -2,6 +2,15 @@
 import pytest
 
 
+def _can_import_visa():
+    """Check if pyvisa is available"""
+    try:
+        import visa
+        return True
+    except ImportError:
+        return False
+
+
 class TestImports:
     """Tests to verify package structure and imports"""
 
@@ -20,6 +29,10 @@ class TestImports:
         from pym8190a import settings
         assert settings is not None
 
+    @pytest.mark.skipif(
+        not _can_import_visa(),
+        reason="pyvisa not available (expected in test environment without hardware)"
+    )
     def test_import_hardware_module(self):
         """Test that hardware module exists (but don't instantiate without real hardware)"""
         from pym8190a import hardware
@@ -27,6 +40,10 @@ class TestImports:
         # Verify key classes exist but don't instantiate
         assert hasattr(hardware, 'SequencerTable')
 
+    @pytest.mark.skipif(
+        not _can_import_visa(),
+        reason="pyvisa not available (expected in test environment without hardware)"
+    )
     def test_import_pym8190a_module(self):
         """Test that pym8190a main module can be imported"""
         from pym8190a import pym8190a

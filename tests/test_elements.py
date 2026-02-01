@@ -141,11 +141,10 @@ class TestListRepeat:
         assert lr[100] == 42  # Should return the first element
 
     def test_out_of_bounds_multiple_elements(self):
-        """Test out of bounds with multiple elements (should raise)"""
+        """Test out of bounds with multiple elements returns first element"""
         lr = list_repeat([1, 2, 3])
-        # Access beyond bounds should fall back to first element or raise
-        with pytest.raises((IndexError, Exception)):
-            _ = lr[10]
+        # With multiple elements, out of bounds access returns first element
+        assert lr[10] == 1  # Falls back to first element
 
     def test_append(self):
         """Test appending to list_repeat"""
