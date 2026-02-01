@@ -11,6 +11,7 @@ import time
 import numpy as np
 import struct
 import collections
+import collections.abc
 import itertools
 import logging
 import sys, traceback
@@ -81,7 +82,7 @@ class list_repeat(list):
         return super(list_repeat, self).__getitem__(0)
 
 
-class DataList(collections.MutableSequence):
+class DataList(collections.abc.MutableSequence):
     def __init__(self, oktypes, list_owner, *args, **kwargs):
         self.oktypes = oktypes
         self.list_owner = list_owner

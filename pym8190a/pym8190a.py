@@ -4,6 +4,7 @@ __metaclass__ = type
 
 import numpy as np
 import collections
+import collections.abc
 import sys
 import itertools
 import traceback
@@ -394,7 +395,7 @@ def stop_awgs(awgs, ch_dict=None):
 
 def update(d, u):
     for k, v in u.iteritems():
-        if isinstance(v, collections.Mapping):
+        if isinstance(v, collections.abc.Mapping):
             r = update(d.get(k, {}), v)
             d[k] = r
         else:
