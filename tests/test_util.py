@@ -7,7 +7,10 @@ from pym8190a.util import (
     check_range_type,
     check_array_like,
     check_array_like_typ,
-    check_list_element
+    check_list_element,
+    ret_property_typecheck,
+    ret_property_range,
+    ret_property_list_element
 )
 
 
@@ -150,3 +153,57 @@ class TestCheckListElement:
         """Test numeric value in list"""
         result = check_list_element(2, "test_val", [1, 2, 3])
         assert result == 2
+
+
+class TestPropertyHelpers:
+    """Tests for property helper functions"""
+
+    def test_ret_property_typecheck(self):
+        """Test ret_property_typecheck creates valid property"""
+        prop = ret_property_typecheck('test_attr', str)
+        assert isinstance(prop, property)
+        
+        # Test with a simple class
+        class TestClass:
+            test_attr = ret_property_typecheck('test_attr', str)
+        
+        obj = TestClass()
+        obj.test_attr = "hello"
+        assert obj.test_attr == "hello"
+        
+        # Test type checking works
+        with pytest.raises(Exception):
+            obj.test_attr = 123
+
+    def test_ret_property_range(self):
+        """Test ret_property_range creates valid property with range checking"""
+        prop = ret_property_range('test_attr', int, 0, 10)
+        assert isinstance(prop, property)
+        
+        class TestClass:
+            test_attr = ret_property_range('test_attr', int, 0, 10)
+        
+        obj = TestClass()
+        obj.test_attr = 5
+        assert obj.test_attr == 5
+        
+        # Test range checking
+        with pytest.raises(Exception):
+            obj.test_attr = 15
+
+    def test_ret_property_list_element(self):
+        """Test ret_property_list_element creates valid property"""
+        prop = ret_property_list_element('test_attr', ['a', 'b', 'c'])
+        assert isinstance(prop, property)
+        
+        class TestClass:
+            test_attr = ret_property_list_element('test_attr', ['a', 'b', 'c'])
+        
+        obj = TestClass()
+        obj.test_attr = 'b'
+        assert obj.test_attr == 'b'
+        
+        # Test list validation
+        with pytest.raises(Exception):
+            obj.test_attr = 'd'
+

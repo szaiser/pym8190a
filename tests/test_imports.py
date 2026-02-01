@@ -5,11 +5,6 @@ import pytest
 class TestImports:
     """Tests to verify package structure and imports"""
 
-    def test_import_main_package(self):
-        """Test that main package can be imported"""
-        import pym8190a
-        assert pym8190a is not None
-
     def test_import_elements(self):
         """Test that elements module can be imported"""
         from pym8190a import elements
@@ -25,6 +20,20 @@ class TestImports:
         from pym8190a import settings
         assert settings is not None
 
+    def test_import_hardware_module(self):
+        """Test that hardware module exists (but don't instantiate without real hardware)"""
+        from pym8190a import hardware
+        assert hardware is not None
+        # Verify key classes exist but don't instantiate
+        assert hasattr(hardware, 'SequencerTable')
+
+    def test_import_pym8190a_module(self):
+        """Test that pym8190a main module can be imported"""
+        from pym8190a import pym8190a
+        assert pym8190a is not None
+        # Verify MultiChSeqDict exists but don't instantiate (needs real hardware)
+        assert hasattr(pym8190a, 'MultiChSeqDict')
+
     def test_sample_frequency_constant(self):
         """Test that sample frequency constant is accessible"""
         from pym8190a.elements import __SAMPLE_FREQUENCY__
@@ -34,6 +43,12 @@ class TestImports:
         """Test that amplitude granularity constant is accessible"""
         from pym8190a.elements import __AMPLITUDE_GRANULARITY__
         assert __AMPLITUDE_GRANULARITY__ > 0
+
+    def test_advance_mode_map_constant(self):
+        """Test that advance mode map is accessible"""
+        from pym8190a.elements import __ADVANCE_MODE_MAP__
+        assert isinstance(__ADVANCE_MODE_MAP__, dict)
+        assert 'AUTO' in __ADVANCE_MODE_MAP__
 
 
 class TestPackageVersion:
